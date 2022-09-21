@@ -1,0 +1,94 @@
+apiVersion: '2021-10-01'
+location: swedencentral
+name: keycloak-exercise
+properties:
+  containers:
+    - name: keycloak
+      properties:
+        image: quay.io/keycloak/keycloak:18.0
+        command:
+          [
+            '/opt/keycloak/bin/kc.sh',
+            'start-dev',
+            '--proxy edge',
+          ]
+        ports:
+          - protocol: tcp
+            port: 8080
+        environmentVariables:
+          - name: KEYCLOAK_ADMIN
+            value: 'team-learning'
+          - name: KEYCLOAK_ADMIN_PASSWORD
+            secureValue: '<to-be-replaced>' # Note: don't commit actual password!
+          - name: PROXY_ADDRESS_FORWARDING
+            value: 'true'
+
+          - name: KC_DB
+            value: postgres
+          - name: KC_DB_USERNAME
+            value: teamlearning@keycloak-db-team-learning
+          - name: KC_DB_PASSWORD
+            secureValue: '<to-be-replaced>' # Note: don't commit actual password!
+          - name: KC_DB_URL_HOST
+            value: keycloak-db-team-learning-2022-09.postgres.database.azure.com
+
+        resources:
+          requests:
+            cpu: 1
+            memoryInGB: 1
+#      depends_on:
+#        - postgresql
+    - name: caddy
+      properties:
+        image: haraldreingruberdedalus/caddy:latest
+        command:
+          [
+            'entrypoint.sh',
+            'caddy',
+            'run',
+          ]
+        ports:
+          - port: 80
+            protocol: TCP
+          - port: 443
+            protocol: TCP
+        environmentVariables:
+          - name: CADDYFILE
+            value: |
+              # # global options
+              # {
+              #   acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+              # }
+              
+              # Reverse proxy from team-learning-keycloak.swedencentral.azurecontainer.io to localhost:8080
+              team-learning-keycloak-2022-09.swedencentral.azurecontainer.io {
+                reverse_proxy localhost:8080
+              }
+
+        resources:
+          requests:
+            cpu: 0.5
+            memoryInGB: 0.5
+
+  osType: Linux
+  ipAddress:
+    type: Public
+    ports:
+      - port: 80
+        protocol: TCP
+      - port: 443
+        protocol: TCP
+    dnsNameLabel: team-learning-keycloak-2022-09
+#  volumes:
+#    - name: postgresql-data
+#      azureFile:
+#        ## defined via calling script
+#        sharename: keycloak-exercise
+#        storageAccountName: keycloakexercise24253
+#        storageAccountKey: <to be replaced!>
+#  diagnostics:
+#    logAnalytics:
+#      workspaceId: keycloak-exercise-logs
+#      workspaceKey: '<to be replaced!>'
+tags: { team: team-learning-session }
+type: Microsoft.ContainerInstance/containerGroups
