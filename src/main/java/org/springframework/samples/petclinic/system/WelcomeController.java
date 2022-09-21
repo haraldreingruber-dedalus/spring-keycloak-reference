@@ -17,6 +17,8 @@
 package org.springframework.samples.petclinic.system;
 
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -26,5 +28,11 @@ class WelcomeController {
     @GetMapping("/")
     public String welcome() {
         return "welcome";
+    }
+
+    @GetMapping("/logout")
+    public String logout(HttpServletRequest request) throws Exception {
+        request.logout();
+        return "redirect:/";
     }
 }
